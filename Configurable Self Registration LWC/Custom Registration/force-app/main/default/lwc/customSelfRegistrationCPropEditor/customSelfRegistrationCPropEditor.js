@@ -8,10 +8,12 @@
 import {LightningElement, api, track, wire} from 'lwc';
 import {CurrentPageReference} from 'lightning/navigation';
 import registerUser from '@salesforce/apex/SiteRegistrationController.registerUser';
+import validateCaptcha from '@salesforce/apex/SiteUtilities.validateRecaptcha';
 import verifyUser from '@salesforce/apex/SiteUtilities.verifyUser';
 import getCustomConfiguration from '@salesforce/apex/SiteUtilities.getCustomConfiguration';
 import checkPersonAccount from '@salesforce/apex/SiteRegistrationController.isPersonAccountEnabled';
 import isLoggingEnabled from '@salesforce/apex/SiteUtilities.isLoggingEnabled';
+import isReCaptchaEnabled from '@salesforce/apex/SiteUtilities.isReCaptchaEnabled';
 
 //TODO: Setting the experience Id is required for Dynamic Branding. However, the Site.setExperienceId method doesn't appear to be working properly. 
 //The browser cookie does not get updated when the expid parameter changes, causing inconsistent behaviour.
@@ -170,6 +172,29 @@ export default class customSelfRegistration extends LightningElement {
                 console.log(error); 
             })
         }
+
+        // add listener for reCaptcha v3
+        isReCaptchaEnabled({settingName: 'Self_Registration_Recaptcha'}).then((enabled) => {
+            document.addEventListener("grecaptchaLoaded", (event) => {
+                this.handleReCaptchaLoaded(event);
+            });
+            document.addEventListener("grecaptchaVerified", (event) => {
+                if(event.detail.action !== 'registerUser'){
+                    return;
+                }
+
+                validateCaptcha({settingName: 'Self_Registration_Recaptcha', recaptchaResponse: event.detail.response}).then((verified) => {
+                    this.handleSignUpClick(verified, this.parsedSettings.registerButtonSignUpMessage, true);
+                }).catch(error => {
+                    console.log(error); 
+                    this._setServerError(error.body.message);
+                    event.preventDefault();
+                    //TODO: Verify how this exception should be handled
+                })
+            });
+        }).catch(error=>{
+            console.log(error); 
+        })
     }
 
     comparePasswordValues(sourceInput, inputToCompare) {
@@ -237,7 +262,6 @@ export default class customSelfRegistration extends LightningElement {
     }
 
     handleSignUpClick(event) {
-
         this._resetServerError();
 
         if(this._areAllInputFieldsValid()) {
@@ -282,5 +306,9 @@ export default class customSelfRegistration extends LightningElement {
             this.handleSubmit(false, this.parsedSettings.registerButtonSignUpMessage, false);
             event.preventDefault();
         }
+    }
+
+    validateCaptcha(event){
+        document.dispatchEvent(new CustomEvent("grecaptchaExecute", {"detail": {action: "registerUser"}}));
     }
 }
