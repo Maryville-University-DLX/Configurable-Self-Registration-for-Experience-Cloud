@@ -11,6 +11,8 @@
         <members>MockProvider</members>
         <!-- <members>RetrievePersonAccountRecordTypes</members> -->
         <!-- <members>RetrievePersonAccountRecordTypesTestOld</members> -->
+        <members>RecaptchaMock</members>
+        <members>RecaptchaTest</members>
         <members>SiteLoginController</members>
         <members>SiteLoginControllerTest</members>
         <members>SiteRegistrationController</members>
