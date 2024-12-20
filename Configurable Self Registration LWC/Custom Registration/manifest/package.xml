@@ -111,5 +111,13 @@
         <members>Experience_Cloud_Log__c</members>
         <name>CustomTab</name>
     </types>
+    <types>
+        <members>reCaptcha</members>
+        <name>NamedCredential</name>
+    </types>
+    <types>
+        <members>reCaptcha</members>
+        <name>ExternalCredential</name>
+    </types>
     <version>62.0</version>
 </Package>
