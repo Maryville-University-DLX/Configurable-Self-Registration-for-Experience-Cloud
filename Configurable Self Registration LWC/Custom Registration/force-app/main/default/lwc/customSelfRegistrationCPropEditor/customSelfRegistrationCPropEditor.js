@@ -175,23 +175,25 @@ export default class customSelfRegistration extends LightningElement {
 
         // add listener for reCaptcha v3
         isReCaptchaEnabled({settingName: 'Self_Registration_Recaptcha'}).then((enabled) => {
-            document.addEventListener("grecaptchaLoaded", (event) => {
-                this.handleReCaptchaLoaded(event);
-            });
-            document.addEventListener("grecaptchaVerified", (event) => {
-                if(event.detail.action !== 'registerUser'){
-                    return;
-                }
+            if(enabled){
+                document.addEventListener("grecaptchaLoaded", (event) => {
+                    this.handleReCaptchaLoaded(event);
+                });
+                document.addEventListener("grecaptchaVerified", (event) => {
+                    if(event.detail.action !== 'registerUser'){
+                        return;
+                    }
 
-                validateCaptcha({settingName: 'Self_Registration_Recaptcha', recaptchaResponse: event.detail.response}).then((verified) => {
-                    this.handleSignUpClick(verified, this.parsedSettings.registerButtonSignUpMessage, true);
-                }).catch(error => {
-                    console.log(error); 
-                    this._setServerError(error.body.message);
-                    event.preventDefault();
-                    //TODO: Verify how this exception should be handled
-                })
-            });
+                    validateCaptcha({settingName: 'Self_Registration_Recaptcha', recaptchaResponse: event.detail.response}).then((verified) => {
+                        this.handleSignUpClick(verified, this.parsedSettings.registerButtonSignUpMessage, true);
+                    }).catch(error => {
+                        console.log(error); 
+                        this._setServerError(error.body.message);
+                        event.preventDefault();
+                        //TODO: Verify how this exception should be handled
+                    })
+                });
+            }
         }).catch(error=>{
             console.log(error); 
         })
@@ -309,6 +311,13 @@ export default class customSelfRegistration extends LightningElement {
     }
 
     validateCaptcha(event){
-        document.dispatchEvent(new CustomEvent("grecaptchaExecute", {"detail": {action: "registerUser"}}));
+        isReCaptchaEnabled({settingName: 'Self_Registration_Recaptcha'}).then((enabled) => {
+            if(enabled){
+                document.dispatchEvent(new CustomEvent("grecaptchaExecute", {"detail": {action: "registerUser"}}));
+            }
+            else{
+                this.handleSignUpClick(event, this.parsedSettings.registerButtonSignUpMessage, true);
+            }
+        });
     }
 }
