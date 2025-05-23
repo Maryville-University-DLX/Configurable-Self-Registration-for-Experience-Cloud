@@ -11,6 +11,8 @@
         <members>MockProvider</members>
         <!-- <members>RetrievePersonAccountRecordTypes</members> -->
         <!-- <members>RetrievePersonAccountRecordTypesTestOld</members> -->
+        <members>RecaptchaMock</members>
+        <members>RecaptchaTest</members>
         <members>SiteLoginController</members>
         <members>SiteLoginControllerTest</members>
         <members>SiteRegistrationController</members>
@@ -110,6 +112,14 @@
     <types>
         <members>Experience_Cloud_Log__c</members>
         <name>CustomTab</name>
+    </types>
+    <types>
+        <members>reCaptcha</members>
+        <name>NamedCredential</name>
+    </types>
+    <types>
+        <members>reCaptcha</members>
+        <name>ExternalCredential</name>
     </types>
     <version>62.0</version>
 </Package>

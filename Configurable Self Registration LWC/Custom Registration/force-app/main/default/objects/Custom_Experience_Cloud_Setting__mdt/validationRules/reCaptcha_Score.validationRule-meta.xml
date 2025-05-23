@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ValidationRule xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>reCaptcha_Score</fullName>
+    <active>true</active>
+    <description>Verify the reCaptcha score is within limits.</description>
+    <errorConditionFormula>AND(!ISBLANK(reCaptcha_Score_Minimum__c), OR(reCaptcha_Score_Minimum__c &lt; 0,reCaptcha_Score_Minimum__c &gt; 1))</errorConditionFormula>
+    <errorDisplayField>reCaptcha_Score_Minimum__c</errorDisplayField>
+    <errorMessage>reCaptcha scores must be between 0.0 and 1.0 inclusive.</errorMessage>
+</ValidationRule>

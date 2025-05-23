@@ -288,6 +288,129 @@ public without sharing class SiteUtilities {
             return true;
         }
         return false;
+    }    
+    
+    /**
+    * @description Checks to see if reCaptcha is activated.
+    * @param settingName - pass in the settingName which is related to the component
+    * @return true/false depending on setting value.
+    */
+    @AuraEnabled(cacheable=true)
+    public static Boolean isReCaptchaEnabled(String settingName) {        
+        List<Custom_Experience_Cloud_Setting__mdt> reCaptchaSetting = new List<Custom_Experience_Cloud_Setting__mdt>();
+        try {
+            reCaptchaSetting = [SELECT Id, Enable__c, DeveloperName FROM Custom_Experience_Cloud_Setting__mdt WHERE (DeveloperName = :settingName AND Enable__c = true) WITH SECURITY_ENFORCED LIMIT 1];
+        }
+        catch(Exception ex) {
+            return false;
+        }
+        
+        if(!reCaptchaSetting.isEmpty() && reCaptchaSetting.size() == 1) {
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+    * @description Retrieves the public site key for reCaptcha.
+    * @param settingName - pass in the settingName which is related to the component
+    * @return The key if found; blank otherwise.
+    */
+    @AuraEnabled(cacheable=true)
+    public static string getReCaptchaSiteKey(String settingName) {        
+        List<Custom_Experience_Cloud_Setting__mdt> reCaptchaSetting = new List<Custom_Experience_Cloud_Setting__mdt>();
+        try {
+            reCaptchaSetting = [SELECT Id, reCaptcha_Site_Key__c, DeveloperName FROM Custom_Experience_Cloud_Setting__mdt WHERE (DeveloperName = :settingName AND Enable_reCaptcha__c = true) WITH SECURITY_ENFORCED LIMIT 1];
+        }
+        catch(Exception ex) {
+            return '';
+        }
+        
+        if(!reCaptchaSetting.isEmpty() && reCaptchaSetting.size() == 1) {
+            return reCaptchaSetting[0].reCaptcha_Site_Key__c;
+        }
+        return '';
+    }
+
+    /**
+    * @description Retrieves the secret key for reCaptcha.
+    * @param settingName - pass in the settingName which is related to the component
+    * @return The key if found; blank otherwise.
+    */
+    public static string getReCaptchaSecretKey(String settingName) {        
+        List<Custom_Experience_Cloud_Setting__mdt> reCaptchaSetting = new List<Custom_Experience_Cloud_Setting__mdt>();
+        try {
+            reCaptchaSetting = [SELECT Id, reCaptcha_Secret_Key__c, DeveloperName FROM Custom_Experience_Cloud_Setting__mdt WHERE (DeveloperName = :settingName AND Enable_reCaptcha__c = true) WITH SECURITY_ENFORCED LIMIT 1];
+        }
+        catch(Exception ex) {
+            return '';
+        }
+        
+        if(!reCaptchaSetting.isEmpty() && reCaptchaSetting.size() == 1) {
+            return reCaptchaSetting[0].reCaptcha_Secret_Key__c;
+        }
+        return '';
+    }
+
+    /**
+    * @description Retrieves the minimum score threshold for reCaptcha.
+    * @param settingName - pass in the settingName which is related to the component
+    * @return The score if found; zero otherwise.
+    */
+    public static Decimal getReCaptchaScore(String settingName) {        
+        List<Custom_Experience_Cloud_Setting__mdt> reCaptchaSetting = new List<Custom_Experience_Cloud_Setting__mdt>();
+        try {
+            reCaptchaSetting = [SELECT Id, reCaptcha_Score_Minimum__c, DeveloperName FROM Custom_Experience_Cloud_Setting__mdt WHERE (DeveloperName = :settingName AND Enable_reCaptcha__c = true AND reCaptcha_Version__c = '3') WITH SECURITY_ENFORCED LIMIT 1];
+        }
+        catch(Exception ex) {
+            return 0;
+        }
+        
+        if(!reCaptchaSetting.isEmpty() && reCaptchaSetting.size() == 1) {
+            return reCaptchaSetting[0].reCaptcha_Score_Minimum__c;
+        }
+        return 0;
+    }
+
+    /**
+    * @description Calls the reCaptcha validation service.
+    * @param settingName - pass in the settingName which is related to the component
+    * @param recaptchaResponse - The response from the reCaptcha widget on the web page.
+    * @return Boolean - True if the response is a success and meets the score threshold (v3 only.)
+    */
+    @AuraEnabled
+    public static Boolean validateRecaptcha(String settingName, String recaptchaResponse) {
+        Boolean isValid = false;
+        if(String.isNotBlank(recaptchaResponse)){
+            Http http = new Http();
+            HttpRequest request = new HttpRequest();
+            request.setEndpoint('callout:reCaptcha');
+            request.setMethod('POST');
+            String secretKey = SiteUtilities.getReCaptchaSecretKey(settingName);
+            request.setBody('secret=' + secretKey + '&response=' + recaptchaResponse);
+            HttpResponse response = http.send(request);
+
+            if (response.getStatusCode() == 200) {
+                Map<String, Object> result = (Map<String, Object>) JSON.deserializeUntyped(response.getBody());
+
+                if (result.containsKey('success') && result.get('success') == true) {
+                    if (result.containsKey('score')) {
+                        //score logic is only needed/returned for v3 (0.0 - 1.0)
+                        //https://developers.google.com/recaptcha/docs/v3
+                        String action = (String)result.get('action');
+                        Decimal threshold = SiteUtilities.getReCaptchaScore(settingName);
+                        Decimal score = (Decimal)result.get('score');
+                        if (score >= threshold) {
+                            isValid = true;
+                        }
+                    } else {
+                        isValid = true;
+                    }
+                } 
+            }
+        }
+
+        return isValid;
     }
 
     /**
